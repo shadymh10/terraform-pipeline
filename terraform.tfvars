@@ -22,7 +22,7 @@ cluster_version           = "1.30"
 node_group_desired_size   = 1 # 2 nodes per AZ for HA
 node_group_min_size       = 1
 node_group_max_size       = 2
-node_instance_types       = ["t3.micro"]
+node_instance_types       = ["t2.micro"]
 node_disk_size            = 20
 enable_cluster_encryption = true
 
