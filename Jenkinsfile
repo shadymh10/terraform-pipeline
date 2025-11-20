@@ -20,8 +20,7 @@ pipeline {
                 echo "🔹 Checking out repository..."
                 git(
                     branch: 'main',
-                    url: 'https://github.com/shadymh10/terraform-pipeline.git',
-                    credentialsId: 'github-token'
+                    url: 'https://github.com/shadymh10/terraform-pipeline.git'
                 )
             }
         }
@@ -47,7 +46,6 @@ pipeline {
             }
         }
 
-        // ---- Apply infra (optional) ----
         stage('Terraform Apply') {
             steps {
                 echo "🚀 Applying Terraform plan..."
@@ -56,7 +54,6 @@ pipeline {
             }
         }
 
-        // ---- Destroy infra (optional) ----
         stage('Terraform Destroy') {
             when {
                 expression { return params.DESTROY == true }
@@ -67,7 +64,6 @@ pipeline {
                 echo "🔥 Infrastructure destroyed successfully!"
             }
         }
-
     }
 
     post {
