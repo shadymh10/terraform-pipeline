@@ -1,23 +1,27 @@
 pipeline {
+
     agent any
 
+    // ---- Environment variables ----
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')   // تأكد من عمل Credentials في Jenkins
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
     }
 
+    // ---- Parameters ----
     parameters {
-        booleanParam(name: 'DESTROY', defaultValue: false, description: 'Set true to destroy infrastructure')
+        booleanParam(name: 'DESTROY', defaultValue: false, description: 'Set true to destroy infra after run')
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 echo "🔹 Checking out repository..."
                 git(
-                    url: 'https://github.com/shadymh10/terraform-pipeline.git', 
                     branch: 'main',
-                    credentialsId: 'github-token'   // استخدم GitHub token لو الريبو Private
+                    url: 'https://github.com/shadymh10/terraform-pipeline.git',
+                    credentialsId: 'github-token'
                 )
             }
         }
@@ -31,7 +35,7 @@ pipeline {
 
         stage('Terraform Validate') {
             steps {
-                echo "🔍 Validating Terraform configuration..."
+                echo "🔍 Validating Terraform files..."
                 sh 'terraform validate'
             }
         }
@@ -43,25 +47,27 @@ pipeline {
             }
         }
 
+        // ---- Apply infra (optional) ----
         stage('Terraform Apply') {
-            when {
-                expression { return !params.DESTROY }  // Apply only if DESTROY=false
-            }
             steps {
                 echo "🚀 Applying Terraform plan..."
                 sh 'terraform apply -input=false -auto-approve tfplan'
+                echo "✅ Infrastructure deployed successfully!"
             }
         }
 
+        // ---- Destroy infra (optional) ----
         stage('Terraform Destroy') {
             when {
-                expression { return params.DESTROY }   // Destroy only if DESTROY=true
+                expression { return params.DESTROY == true }
             }
             steps {
-                echo "🗑 Destroying Terraform infrastructure..."
+                echo "🗑️ Destroying Terraform infrastructure..."
                 sh 'terraform destroy -auto-approve'
+                echo "🔥 Infrastructure destroyed successfully!"
             }
         }
+
     }
 
     post {
