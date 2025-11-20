@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')   // تأكد من عمل Credentials في Jenkins
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+    }
+
+    parameters {
+        booleanParam(name: 'DESTROY', defaultValue: false, description: 'Set true to destroy infrastructure')
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo "🔹 Checking out repository..."
+                git(
+                    url: 'https://github.com/shadymh10/terraform-pipeline.git', 
+                    branch: 'main',
+                    credentialsId: 'github-token'   // استخدم GitHub token لو الريبو Private
+                )
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                echo "🔹 Initializing Terraform..."
+                sh 'terraform init -input=false -reconfigure'
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                echo "🔍 Validating Terraform configuration..."
+                sh 'terraform validate'
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                echo "📦 Creating Terraform plan..."
+                sh 'terraform plan -input=false -out=tfplan'
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { return !params.DESTROY }  // Apply only if DESTROY=false
+            }
+            steps {
+                echo "🚀 Applying Terraform plan..."
+                sh 'terraform apply -input=false -auto-approve tfplan'
+            }
+        }
+
+        stage('Terraform Destroy') {
+            when {
+                expression { return params.DESTROY }   // Destroy only if DESTROY=true
+            }
+            steps {
+                echo "🗑 Destroying Terraform infrastructure..."
+                sh 'terraform destroy -auto-approve'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
+        }
+    }
+}
