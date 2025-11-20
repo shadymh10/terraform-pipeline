@@ -1,12 +1,10 @@
 pipeline {
     agent any
 
-    // ---- Environment variables ----
     environment {
         AWS_REGION = 'us-east-1'
     }
 
-    // ---- Parameters ----
     parameters {
         booleanParam(name: 'DESTROY', defaultValue: false, description: 'Set true to destroy infra after run')
     }
@@ -16,20 +14,14 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "🔹 Checking out repository..."
-                git(
-                    branch: 'main',
-                    url: 'https://github.com/shadymh10/terraform-pipeline.git'
-                    // No credentials needed for public repo
-                )
+                git branch: 'main', url: 'https://github.com/shadymh10/terraform-pipeline.git'
             }
         }
 
         stage('Terraform Init') {
             steps {
                 echo "🔹 Initializing Terraform..."
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-access-key']]) {
-                    sh 'terraform init -input=false -reconfigure'
-                }
+                sh 'terraform init -input=false -reconfigure'
             }
         }
 
@@ -56,24 +48,17 @@ pipeline {
         }
 
         stage('Terraform Destroy') {
-            when {
-                expression { return params.DESTROY == true }
-            }
+            when { expression { params.DESTROY } }
             steps {
                 echo "🗑️ Destroying Terraform infrastructure..."
                 sh 'terraform destroy -auto-approve'
                 echo "🔥 Infrastructure destroyed successfully!"
             }
         }
-
     }
 
     post {
-        success {
-            echo "🎉 Pipeline completed successfully!"
-        }
-        failure {
-            echo "❌ Pipeline failed!"
-        }
+        success { echo "🎉 Pipeline completed successfully!" }
+        failure { echo "❌ Pipeline failed!" }
     }
 }
