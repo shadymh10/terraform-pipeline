@@ -1,11 +1,9 @@
 pipeline {
-
     agent any
 
     // ---- Environment variables ----
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_REGION = 'us-east-1'
     }
 
     // ---- Parameters ----
@@ -21,6 +19,7 @@ pipeline {
                 git(
                     branch: 'main',
                     url: 'https://github.com/shadymh10/terraform-pipeline.git'
+                    // No credentials needed for public repo
                 )
             }
         }
@@ -28,7 +27,9 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 echo "🔹 Initializing Terraform..."
-                sh 'terraform init -input=false -reconfigure'
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-access-key']]) {
+                    sh 'terraform init -input=false -reconfigure'
+                }
             }
         }
 
@@ -64,6 +65,7 @@ pipeline {
                 echo "🔥 Infrastructure destroyed successfully!"
             }
         }
+
     }
 
     post {
